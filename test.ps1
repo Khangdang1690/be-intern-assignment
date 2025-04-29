@@ -148,6 +148,32 @@ function test_delete_post {
     make_request "DELETE" "$POSTS_URL/$post_id"
 }
 
+# Add new function to test get posts by hashtag
+function test_get_posts_by_hashtag {
+    print_header "Testing GET posts by hashtag"
+    $tag = Read-Host "Enter hashtag name (without #)"
+    $limit = Read-Host "Enter limit (or press Enter for default)"
+    $offset = Read-Host "Enter offset (or press Enter for default)"
+    
+    $endpoint = "$POSTS_URL/hashtag/$tag"
+    
+    if ($limit -or $offset) {
+        $endpoint += "?"
+        if ($limit) {
+            $endpoint += "limit=$limit"
+        }
+        
+        if ($offset) {
+            if ($limit) {
+                $endpoint += "&"
+            }
+            $endpoint += "offset=$offset"
+        }
+    }
+    
+    make_request "GET" $endpoint
+}
+
 # Follow-related functions
 function test_get_all_follows {
     print_header "Testing GET all follows"
@@ -346,38 +372,7 @@ function test_get_feed {
     make_request "POST" "$FEED_URL$query_params" $feed_data
 }
 
-# Main program structure
-function main {
-    while ($true) {
-        # Show main menu
-        Write-Host "`nAPI Testing Menu" -ForegroundColor $GREEN
-        Write-Host "1. Users"
-        Write-Host "2. Posts"
-        Write-Host "3. Follows"
-        Write-Host "4. Likes"
-        Write-Host "5. Hashtags"
-        Write-Host "6. Post Hashtags"
-        Write-Host "7. Feed"
-        Write-Host "8. Exit"
-        $main_choice = Read-Host "Enter your choice (1-8)"
-        
-        switch ($main_choice) {
-            "1" { show_users_menu }
-            "2" { show_posts_menu }
-            "3" { show_follows_menu }
-            "4" { show_likes_menu }
-            "5" { show_hashtags_menu }
-            "6" { show_post_hashtags_menu }
-            "7" { show_feed_menu }
-            "8" { 
-                Write-Host "Exiting..."
-                exit 
-            }
-            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
-        }
-    }
-}
-
+# Menu functions
 function show_users_menu {
     $exit_submenu = $false
     
@@ -413,8 +408,9 @@ function show_posts_menu {
         Write-Host "3. Create new post"
         Write-Host "4. Update post"
         Write-Host "5. Delete post"
-        Write-Host "6. Back to main menu"
-        $choice = Read-Host "Enter your choice (1-6)"
+        Write-Host "6. Get posts by hashtag"
+        Write-Host "7. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-7)"
         
         switch ($choice) {
             "1" { test_get_all_posts }
@@ -422,7 +418,8 @@ function show_posts_menu {
             "3" { test_create_post }
             "4" { test_update_post }
             "5" { test_delete_post }
-            "6" { $exit_submenu = $true }
+            "6" { test_get_posts_by_hashtag }
+            "7" { $exit_submenu = $true }
             default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }
     }
@@ -540,6 +537,37 @@ function show_feed_menu {
         switch ($choice) {
             "1" { test_get_feed }
             "2" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
+}
+
+# Main function
+function main {
+    while ($true) {
+        Write-Host "`nAPI Testing Menu" -ForegroundColor $GREEN
+        Write-Host "1. Users"
+        Write-Host "2. Posts"
+        Write-Host "3. Follows"
+        Write-Host "4. Likes"
+        Write-Host "5. Hashtags"
+        Write-Host "6. Post Hashtags"
+        Write-Host "7. Feed"
+        Write-Host "8. Exit"
+        $main_choice = Read-Host "Enter your choice (1-8)"
+        
+        switch ($main_choice) {
+            "1" { show_users_menu }
+            "2" { show_posts_menu }
+            "3" { show_follows_menu }
+            "4" { show_likes_menu }
+            "5" { show_hashtags_menu }
+            "6" { show_post_hashtags_menu }
+            "7" { show_feed_menu }
+            "8" { 
+                Write-Host "Exiting..."
+                exit 
+            }
             default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }
     }

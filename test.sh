@@ -387,6 +387,32 @@ EOF
     make_request "POST" "$FEED_URL$query_params" "$feed_data"
 }
 
+# Add new function to test get posts by hashtag
+test_get_posts_by_hashtag() {
+    print_header "Testing GET posts by hashtag"
+    read -p "Enter hashtag name (without #): " tag
+    read -p "Enter limit (or press Enter for default): " limit
+    read -p "Enter offset (or press Enter for default): " offset
+    
+    local endpoint="$POSTS_URL/hashtag/$tag"
+    
+    if [ -n "$limit" ] || [ -n "$offset" ]; then
+        endpoint+="?"
+        if [ -n "$limit" ]; then
+            endpoint+="limit=$limit"
+        fi
+        
+        if [ -n "$offset" ]; then
+            if [ -n "$limit" ]; then
+                endpoint+="&"
+            fi
+            endpoint+="offset=$offset"
+        fi
+    fi
+    
+    make_request "GET" "$endpoint"
+}
+
 # Menu functions
 show_users_menu() {
     local exit_submenu=false
@@ -424,8 +450,9 @@ show_posts_menu() {
         echo "3. Create new post"
         echo "4. Update post"
         echo "5. Delete post"
-        echo "6. Back to main menu"
-        echo -n "Enter your choice (1-6): "
+        echo "6. Get posts by hashtag"
+        echo "7. Back to main menu"
+        echo -n "Enter your choice (1-7): "
         read post_choice
         
         case $post_choice in
@@ -434,7 +461,8 @@ show_posts_menu() {
             3) test_create_post ;;
             4) test_update_post ;;
             5) test_delete_post ;;
-            6) exit_submenu=true ;;
+            6) test_get_posts_by_hashtag ;;
+            7) exit_submenu=true ;;
             *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
         esac
     done

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Post } from '../entities/Post';
 import { AppDataSource } from '../data-source';
 import { User } from '../entities/User';
+import { Like } from '../entities/Like';
 
 export class PostController {
   private postRepository = AppDataSource.getRepository(Post);
@@ -85,6 +86,45 @@ export class PostController {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: 'Error deleting post', error });
+    }
+  }
+
+  async getPostsByHashtag(req: Request, res: Response) {
+    try {
+      const tag = req.params.tag;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      // Find posts with the specified hashtag
+      const query = this.postRepository
+        .createQueryBuilder('post')
+        .innerJoinAndSelect('post.author', 'author')
+        .innerJoin('post.postHashtags', 'postHashtag')
+        .innerJoin('postHashtag.hashtag', 'hashtag')
+        .where('LOWER(hashtag.name) = LOWER(:tagName)', { tagName: tag })
+        .skip(offset)
+        .take(limit);
+
+      // Get posts with the hashtag
+      const posts = await query.getMany();
+
+      // Get like counts for each post
+      const postsWithLikes = await Promise.all(
+        posts.map(async (post) => {
+          const likeCount = await AppDataSource.getRepository(Like).count({
+            where: { postId: post.id }
+          });
+
+          return {
+            ...post,
+            likeCount
+          };
+        })
+      );
+
+      res.json(postsWithLikes);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching posts by hashtag', error });
     }
   }
 } 

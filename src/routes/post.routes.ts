@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../middleware/validation.middleware';
 import { createPostSchema, updatePostSchema } from '../validations/post.validation';
+import { getPostsByHashtagParamsSchema, getPostsByHashtagQuerySchema } from '../validations/hashtag.validation';
 import { PostController } from '../controllers/post.controller';
 
 export const postRouter = Router();
@@ -19,4 +20,12 @@ postRouter.post('/', validate(createPostSchema), postController.createPost.bind(
 postRouter.put('/:id', validate(updatePostSchema), postController.updatePost.bind(postController));
 
 // Delete post
-postRouter.delete('/:id', postController.deletePost.bind(postController)); 
+postRouter.delete('/:id', postController.deletePost.bind(postController));
+
+// Get posts by hashtag
+postRouter.get(
+  '/hashtag/:tag',
+  validate(getPostsByHashtagParamsSchema, 'params'),
+  validate(getPostsByHashtagQuerySchema, 'query'),
+  postController.getPostsByHashtag.bind(postController)
+); 

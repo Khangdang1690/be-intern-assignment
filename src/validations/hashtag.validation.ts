@@ -8,4 +8,20 @@ export const createHashtagSchema = Joi.object({
     'string.max': 'Hashtag name cannot exceed 255 characters',
     'any.required': 'Hashtag name is required',
   }),
+});
+
+export const getPostsByHashtagParamsSchema = Joi.object({
+  tag: Joi.string().required().messages({
+    'string.base': 'Hashtag must be a string',
+    'any.required': 'Hashtag is required',
+  }),
+});
+
+export const getPostsByHashtagQuerySchema = Joi.object({
+  limit: Joi.string().pattern(/^\d+$/).default('10').messages({
+    'string.pattern.base': 'Limit must be a number',
+  }),
+  offset: Joi.string().pattern(/^\d+$/).default('0').messages({
+    'string.pattern.base': 'Offset must be a number',
+  }),
 }); 
