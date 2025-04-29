@@ -101,6 +101,31 @@ function test_delete_user {
     make_request "DELETE" "$USERS_URL/$user_id"
 }
 
+function test_get_user_followers {
+    print_header "Testing GET user followers"
+    $user_id = Read-Host "Enter user ID"
+    $limit = Read-Host "Enter limit (or press Enter for default)"
+    $offset = Read-Host "Enter offset (or press Enter for default)"
+    
+    $endpoint = "$USERS_URL/$user_id/followers"
+    
+    if ($limit -or $offset) {
+        $endpoint += "?"
+        if ($limit) {
+            $endpoint += "limit=$limit"
+        }
+        
+        if ($offset) {
+            if ($limit) {
+                $endpoint += "&"
+            }
+            $endpoint += "offset=$offset"
+        }
+    }
+    
+    make_request "GET" $endpoint
+}
+
 # Post-related functions
 function test_get_all_posts {
     print_header "Testing GET all posts"
@@ -380,11 +405,13 @@ function show_users_menu {
         Write-Host "`nUsers Menu" -ForegroundColor $GREEN
         Write-Host "1. Get all users"
         Write-Host "2. Get user by ID"
-        Write-Host "3. Create new user"
+        Write-Host "3. Create user"
         Write-Host "4. Update user"
         Write-Host "5. Delete user"
-        Write-Host "6. Back to main menu"
-        $choice = Read-Host "Enter your choice (1-6)"
+        Write-Host "6. Get user followers"
+        Write-Host "7. Back to main menu"
+        
+        $choice = Read-Host "Enter your choice"
         
         switch ($choice) {
             "1" { test_get_all_users }
@@ -392,7 +419,8 @@ function show_users_menu {
             "3" { test_create_user }
             "4" { test_update_user }
             "5" { test_delete_user }
-            "6" { $exit_submenu = $true }
+            "6" { test_get_user_followers }
+            "7" { $exit_submenu = $true }
             default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }
     }

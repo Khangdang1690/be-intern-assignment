@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { User } from '../entities/User';
+import { Follow } from '../entities/Follow';
 import { AppDataSource } from '../data-source';
 
 export class UserController {
   private userRepository = AppDataSource.getRepository(User);
+  private followRepository = AppDataSource.getRepository(Follow);
 
   async getAllUsers(req: Request, res: Response) {
     try {
@@ -63,6 +65,56 @@ export class UserController {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: 'Error deleting user', error });
+    }
+  }
+
+  async getUserFollowers(req: Request, res: Response) {
+    try {
+      const userId = parseInt(req.params.id);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      
+      // Verify user exists
+      const userExists = await this.userRepository.findOneBy({ id: userId });
+      
+      if (!userExists) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Count total followers for pagination
+      const totalFollowers = await this.followRepository.count({
+        where: { followingId: userId, isActive: true }
+      });
+      
+      // Get followers with pagination and sorting
+      const follows = await this.followRepository.find({
+        where: { followingId: userId, isActive: true },
+        relations: ['follower'],
+        order: { createdAt: 'DESC' },
+        skip: offset,
+        take: limit
+      });
+      
+      // Format the response
+      const followers = follows.map(follow => ({
+        id: follow.follower.id,
+        firstName: follow.follower.firstName,
+        lastName: follow.follower.lastName,
+        email: follow.follower.email,
+        followDate: follow.createdAt
+      }));
+      
+      // Return followers with pagination info
+      res.json({
+        data: followers,
+        pagination: {
+          total: totalFollowers,
+          limit: limit,
+          offset: offset
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching followers', error });
     }
   }
 }

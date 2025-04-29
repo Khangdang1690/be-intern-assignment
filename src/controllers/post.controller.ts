@@ -11,9 +11,16 @@ export class PostController {
   async getAllPosts(req: Request, res: Response) {
     try {
       const posts = await this.postRepository.find({
-        relations: ['author'],
+        relations: ['author', 'likes'],
       });
-      res.json(posts);
+      
+      // Format posts to include like count
+      const formattedPosts = posts.map(post => ({
+        ...post,
+        likeCount: post.likes ? post.likes.length : 0,
+      }));
+      
+      res.json(formattedPosts);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching posts', error });
     }
@@ -23,14 +30,20 @@ export class PostController {
     try {
       const post = await this.postRepository.findOne({
         where: { id: parseInt(req.params.id) },
-        relations: ['author'],
+        relations: ['author', 'likes'],
       });
       
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }
       
-      res.json(post);
+      // Format post to include like count
+      const formattedPost = {
+        ...post,
+        likeCount: post.likes ? post.likes.length : 0,
+      };
+      
+      res.json(formattedPost);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching post', error });
     }

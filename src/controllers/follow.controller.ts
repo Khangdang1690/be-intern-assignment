@@ -10,6 +10,7 @@ export class FollowController {
   async getAllFollows(req: Request, res: Response) {
     try {
       const follows = await this.followRepository.find({
+        where: { isActive: true },
         relations: ['follower', 'following'],
       });
       res.json(follows);
@@ -59,6 +60,7 @@ export class FollowController {
         where: {
           followerId: req.body.followerId,
           followingId: req.body.followingId,
+          isActive: true,
         },
       });
       
@@ -103,6 +105,7 @@ export class FollowController {
         where: {
           followerId: followerId,
           followingId: followingId,
+          isActive: true,
         },
       });
       
@@ -110,12 +113,10 @@ export class FollowController {
         return res.status(404).json({ message: 'Follow relationship not found' });
       }
       
-      // Delete by the specific follow ID
-      const result = await this.followRepository.delete(follow.id);
-      
-      if (result.affected === 0) {
-        return res.status(404).json({ message: 'Failed to unfollow user' });
-      }
+      // Update instead of delete
+      follow.isActive = false;
+      follow.unfollowedAt = new Date();
+      await this.followRepository.save(follow);
       
       res.status(204).send();
     } catch (error) {

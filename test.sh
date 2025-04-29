@@ -122,6 +122,31 @@ test_delete_user() {
     make_request "DELETE" "$USERS_URL/$user_id"
 }
 
+test_get_user_followers() {
+    print_header "Testing GET user followers"
+    read -p "Enter user ID: " user_id
+    read -p "Enter limit (or press Enter for default): " limit
+    read -p "Enter offset (or press Enter for default): " offset
+    
+    local endpoint="$USERS_URL/$user_id/followers"
+    
+    if [ -n "$limit" ] || [ -n "$offset" ]; then
+        endpoint+="?"
+        if [ -n "$limit" ]; then
+            endpoint+="limit=$limit"
+        fi
+        
+        if [ -n "$offset" ]; then
+            if [ -n "$limit" ]; then
+                endpoint+="&"
+            fi
+            endpoint+="offset=$offset"
+        fi
+    fi
+    
+    make_request "GET" "$endpoint"
+}
+
 # Post-related functions
 test_get_all_posts() {
     print_header "Testing GET all posts"
@@ -421,20 +446,22 @@ show_users_menu() {
         echo -e "\n${GREEN}Users Menu${NC}"
         echo "1. Get all users"
         echo "2. Get user by ID"
-        echo "3. Create new user"
+        echo "3. Create user"
         echo "4. Update user"
         echo "5. Delete user"
-        echo "6. Back to main menu"
-        echo -n "Enter your choice (1-6): "
-        read user_choice
+        echo "6. Get user followers"
+        echo "7. Back to main menu"
         
-        case $user_choice in
+        read -p "Enter your choice: " choice
+        
+        case $choice in
             1) test_get_all_users ;;
             2) test_get_user ;;
             3) test_create_user ;;
             4) test_update_user ;;
             5) test_delete_user ;;
-            6) exit_submenu=true ;;
+            6) test_get_user_followers ;;
+            7) exit_submenu=true ;;
             *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
         esac
     done

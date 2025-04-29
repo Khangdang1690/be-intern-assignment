@@ -10,7 +10,7 @@ import {
 import { User } from './User';
 
 @Entity('follows')
-@Index(['followerId', 'followingId'], { unique: true })
+@Index(['followerId', 'followingId', 'isActive'], { unique: true })
 export class Follow {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -28,6 +28,12 @@ export class Follow {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'followingId' })
   following: User;
+
+  @Column({ default: true })
+  isActive: boolean;
+
+  @Column({ nullable: true })
+  unfollowedAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;

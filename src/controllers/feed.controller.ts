@@ -26,9 +26,9 @@ export class FeedController {
         return res.status(400).json({ message: 'User does not exist' });
       }
       
-      // Find all users that the current user follows
+      // Find all users that the current user actively follows
       const follows = await this.followRepository.find({
-        where: { followerId: userId },
+        where: { followerId: userId, isActive: true },
         select: ['followingId'],
       });
       
