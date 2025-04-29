@@ -2,6 +2,7 @@
 $USERS_URL = "http://localhost:3000/api/users"
 $POSTS_URL = "http://localhost:3000/api/posts"
 $FOLLOWS_URL = "http://localhost:3000/api/follows"
+$LIKES_URL = "http://localhost:3000/api/likes"
 
 # Colors for output
 $GREEN = "Green"
@@ -188,6 +189,50 @@ function test_unfollow_user {
     make_request "DELETE" "$FOLLOWS_URL/unfollow" $unfollow_data
 }
 
+# Like-related functions
+function test_get_all_likes {
+    print_header "Testing GET all likes"
+    make_request "GET" $LIKES_URL
+}
+
+function test_get_like {
+    print_header "Testing GET like by ID"
+    $like_id = Read-Host "Enter like ID"
+    make_request "GET" "$LIKES_URL/$like_id"
+}
+
+function test_create_like {
+    print_header "Testing POST create like"
+    $userId = Read-Host "Enter user ID"
+    $postId = Read-Host "Enter post ID"
+    
+    $like_data = @{
+        userId = [int]$userId
+        postId = [int]$postId
+    } | ConvertTo-Json
+    
+    make_request "POST" $LIKES_URL $like_data
+}
+
+function test_delete_like {
+    print_header "Testing DELETE like"
+    $like_id = Read-Host "Enter like ID to delete"
+    make_request "DELETE" "$LIKES_URL/$like_id"
+}
+
+function test_unlike_post {
+    print_header "Testing unlike post"
+    $userId = Read-Host "Enter user ID"
+    $postId = Read-Host "Enter post ID"
+    
+    $unlike_data = @{
+        userId = [int]$userId
+        postId = [int]$postId
+    } | ConvertTo-Json
+    
+    make_request "DELETE" "$LIKES_URL/unlike" $unlike_data
+}
+
 # Main program structure
 function main {
     while ($true) {
@@ -196,14 +241,16 @@ function main {
         Write-Host "1. Users"
         Write-Host "2. Posts"
         Write-Host "3. Follows"
-        Write-Host "4. Exit"
-        $main_choice = Read-Host "Enter your choice (1-4)"
+        Write-Host "4. Likes"
+        Write-Host "5. Exit"
+        $main_choice = Read-Host "Enter your choice (1-5)"
         
         switch ($main_choice) {
             "1" { show_users_menu }
             "2" { show_posts_menu }
             "3" { show_follows_menu }
-            "4" { 
+            "4" { show_likes_menu }
+            "5" { 
                 Write-Host "Exiting..."
                 exit 
             }
@@ -281,6 +328,31 @@ function show_follows_menu {
             "3" { test_create_follow }
             "4" { test_unfollow_user }
             "5" { test_delete_follow }
+            "6" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
+}
+
+function show_likes_menu {
+    $exit_submenu = $false
+    
+    while (-not $exit_submenu) {
+        Write-Host "`nLikes Menu" -ForegroundColor $GREEN
+        Write-Host "1. Get all likes"
+        Write-Host "2. Get like by ID"
+        Write-Host "3. Create new like"
+        Write-Host "4. Delete like"
+        Write-Host "5. Unlike post"
+        Write-Host "6. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-6)"
+        
+        switch ($choice) {
+            "1" { test_get_all_likes }
+            "2" { test_get_like }
+            "3" { test_create_like }
+            "4" { test_delete_like }
+            "5" { test_unlike_post }
             "6" { $exit_submenu = $true }
             default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }

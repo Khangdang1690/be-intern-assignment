@@ -4,6 +4,7 @@
 USERS_URL="http://localhost:3000/api/users"
 POSTS_URL="http://localhost:3000/api/posts"
 FOLLOWS_URL="http://localhost:3000/api/follows"
+LIKES_URL="http://localhost:3000/api/likes"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -215,6 +216,54 @@ EOF
     make_request "DELETE" "$FOLLOWS_URL/unfollow" "$unfollow_data"
 }
 
+# Like-related functions
+test_get_all_likes() {
+    print_header "Testing GET all likes"
+    make_request "GET" "$LIKES_URL"
+}
+
+test_get_like() {
+    print_header "Testing GET like by ID"
+    read -p "Enter like ID: " like_id
+    make_request "GET" "$LIKES_URL/$like_id"
+}
+
+test_create_like() {
+    print_header "Testing POST create like"
+    read -p "Enter user ID: " userId
+    read -p "Enter post ID: " postId
+    
+    local like_data=$(cat <<EOF
+{
+    "userId": $userId,
+    "postId": $postId
+}
+EOF
+)
+    make_request "POST" "$LIKES_URL" "$like_data"
+}
+
+test_delete_like() {
+    print_header "Testing DELETE like"
+    read -p "Enter like ID to delete: " like_id
+    make_request "DELETE" "$LIKES_URL/$like_id"
+}
+
+test_unlike_post() {
+    print_header "Testing unlike post"
+    read -p "Enter user ID: " userId
+    read -p "Enter post ID: " postId
+    
+    local unlike_data=$(cat <<EOF
+{
+    "userId": $userId,
+    "postId": $postId
+}
+EOF
+)
+    make_request "DELETE" "$LIKES_URL/unlike" "$unlike_data"
+}
+
 # Menu functions
 show_users_menu() {
     local exit_submenu=false
@@ -294,6 +343,32 @@ show_follows_menu() {
     done
 }
 
+show_likes_menu() {
+    local exit_submenu=false
+    
+    while [ "$exit_submenu" = false ]; do
+        echo -e "\n${GREEN}Likes Menu${NC}"
+        echo "1. Get all likes"
+        echo "2. Get like by ID"
+        echo "3. Create new like"
+        echo "4. Delete like"
+        echo "5. Unlike post"
+        echo "6. Back to main menu"
+        echo -n "Enter your choice (1-6): "
+        read like_choice
+        
+        case $like_choice in
+            1) test_get_all_likes ;;
+            2) test_get_like ;;
+            3) test_create_like ;;
+            4) test_delete_like ;;
+            5) test_unlike_post ;;
+            6) exit_submenu=true ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
+}
+
 # Main function
 main() {
     while true; do
@@ -301,15 +376,17 @@ main() {
         echo "1. Users"
         echo "2. Posts"
         echo "3. Follows"
-        echo "4. Exit"
-        echo -n "Enter your choice (1-4): "
-        read choice
+        echo "4. Likes"
+        echo "5. Exit"
+        echo -n "Enter your choice (1-5): "
+        read main_choice
         
-        case $choice in
+        case $main_choice in
             1) show_users_menu ;;
             2) show_posts_menu ;;
             3) show_follows_menu ;;
-            4) echo "Exiting..."; exit 0 ;;
+            4) show_likes_menu ;;
+            5) echo "Exiting..."; exit 0 ;;
             *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
         esac
     done
