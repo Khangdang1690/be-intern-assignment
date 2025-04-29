@@ -5,6 +5,8 @@ USERS_URL="http://localhost:3000/api/users"
 POSTS_URL="http://localhost:3000/api/posts"
 FOLLOWS_URL="http://localhost:3000/api/follows"
 LIKES_URL="http://localhost:3000/api/likes"
+HASHTAGS_URL="http://localhost:3000/api/hashtags"
+POST_HASHTAGS_URL="http://localhost:3000/api/post-hashtags"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -264,6 +266,99 @@ EOF
     make_request "DELETE" "$LIKES_URL/unlike" "$unlike_data"
 }
 
+# Hashtag-related functions
+test_get_all_hashtags() {
+    print_header "Testing GET all hashtags"
+    make_request "GET" "$HASHTAGS_URL"
+}
+
+test_get_hashtag() {
+    print_header "Testing GET hashtag by ID"
+    read -p "Enter hashtag ID: " hashtag_id
+    make_request "GET" "$HASHTAGS_URL/$hashtag_id"
+}
+
+test_create_hashtag() {
+    print_header "Testing POST create hashtag"
+    read -p "Enter hashtag name (without #): " name
+    
+    local hashtag_data=$(cat <<EOF
+{
+    "name": "$name"
+}
+EOF
+)
+    make_request "POST" "$HASHTAGS_URL" "$hashtag_data"
+}
+
+test_update_hashtag() {
+    print_header "Testing PUT update hashtag"
+    read -p "Enter hashtag ID to update: " hashtag_id
+    read -p "Enter new hashtag name (without #): " name
+    
+    local update_data=$(cat <<EOF
+{
+    "name": "$name"
+}
+EOF
+)
+    make_request "PUT" "$HASHTAGS_URL/$hashtag_id" "$update_data"
+}
+
+test_delete_hashtag() {
+    print_header "Testing DELETE hashtag"
+    read -p "Enter hashtag ID to delete: " hashtag_id
+    make_request "DELETE" "$HASHTAGS_URL/$hashtag_id"
+}
+
+# Post Hashtag-related functions
+test_get_all_post_hashtags() {
+    print_header "Testing GET all post hashtags"
+    make_request "GET" "$POST_HASHTAGS_URL"
+}
+
+test_get_post_hashtag() {
+    print_header "Testing GET post hashtag by ID"
+    read -p "Enter post hashtag ID: " post_hashtag_id
+    make_request "GET" "$POST_HASHTAGS_URL/$post_hashtag_id"
+}
+
+test_create_post_hashtag() {
+    print_header "Testing POST create post hashtag"
+    read -p "Enter post ID: " postId
+    read -p "Enter hashtag ID: " hashtagId
+    
+    local post_hashtag_data=$(cat <<EOF
+{
+    "postId": $postId,
+    "hashtagId": $hashtagId
+}
+EOF
+)
+    make_request "POST" "$POST_HASHTAGS_URL" "$post_hashtag_data"
+}
+
+test_delete_post_hashtag() {
+    print_header "Testing DELETE post hashtag"
+    read -p "Enter post hashtag ID to delete: " post_hashtag_id
+    make_request "DELETE" "$POST_HASHTAGS_URL/$post_hashtag_id"
+}
+
+test_remove_hashtag_from_post() {
+    print_header "Testing remove hashtag from post"
+    read -p "Enter post ID: " postId
+    read -p "Enter hashtag ID: " hashtagId
+    
+    local remove_data=$(cat <<EOF
+{
+    "postId": $postId,
+    "hashtagId": $hashtagId
+}
+EOF
+)
+    make_request "DELETE" "$POST_HASHTAGS_URL/remove" "$remove_data"
+}
+
 # Menu functions
 show_users_menu() {
     local exit_submenu=false
@@ -369,6 +464,58 @@ show_likes_menu() {
     done
 }
 
+show_hashtags_menu() {
+    local exit_submenu=false
+    
+    while [ "$exit_submenu" = false ]; do
+        echo -e "\n${GREEN}Hashtags Menu${NC}"
+        echo "1. Get all hashtags"
+        echo "2. Get hashtag by ID"
+        echo "3. Create new hashtag"
+        echo "4. Update hashtag"
+        echo "5. Delete hashtag"
+        echo "6. Back to main menu"
+        echo -n "Enter your choice (1-6): "
+        read hashtag_choice
+        
+        case $hashtag_choice in
+            1) test_get_all_hashtags ;;
+            2) test_get_hashtag ;;
+            3) test_create_hashtag ;;
+            4) test_update_hashtag ;;
+            5) test_delete_hashtag ;;
+            6) exit_submenu=true ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
+}
+
+show_post_hashtags_menu() {
+    local exit_submenu=false
+    
+    while [ "$exit_submenu" = false ]; do
+        echo -e "\n${GREEN}Post Hashtags Menu${NC}"
+        echo "1. Get all post hashtags"
+        echo "2. Get post hashtag by ID"
+        echo "3. Add hashtag to post"
+        echo "4. Remove hashtag from post"
+        echo "5. Delete post hashtag by ID"
+        echo "6. Back to main menu"
+        echo -n "Enter your choice (1-6): "
+        read post_hashtag_choice
+        
+        case $post_hashtag_choice in
+            1) test_get_all_post_hashtags ;;
+            2) test_get_post_hashtag ;;
+            3) test_create_post_hashtag ;;
+            4) test_remove_hashtag_from_post ;;
+            5) test_delete_post_hashtag ;;
+            6) exit_submenu=true ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
+}
+
 # Main function
 main() {
     while true; do
@@ -377,8 +524,10 @@ main() {
         echo "2. Posts"
         echo "3. Follows"
         echo "4. Likes"
-        echo "5. Exit"
-        echo -n "Enter your choice (1-5): "
+        echo "5. Hashtags"
+        echo "6. Post Hashtags"
+        echo "7. Exit"
+        echo -n "Enter your choice (1-7): "
         read main_choice
         
         case $main_choice in
@@ -386,7 +535,9 @@ main() {
             2) show_posts_menu ;;
             3) show_follows_menu ;;
             4) show_likes_menu ;;
-            5) echo "Exiting..."; exit 0 ;;
+            5) show_hashtags_menu ;;
+            6) show_post_hashtags_menu ;;
+            7) echo "Exiting..."; exit 0 ;;
             *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
         esac
     done

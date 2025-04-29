@@ -3,6 +3,8 @@ $USERS_URL = "http://localhost:3000/api/users"
 $POSTS_URL = "http://localhost:3000/api/posts"
 $FOLLOWS_URL = "http://localhost:3000/api/follows"
 $LIKES_URL = "http://localhost:3000/api/likes"
+$HASHTAGS_URL = "http://localhost:3000/api/hashtags"
+$POST_HASHTAGS_URL = "http://localhost:3000/api/post-hashtags"
 
 # Colors for output
 $GREEN = "Green"
@@ -233,6 +235,91 @@ function test_unlike_post {
     make_request "DELETE" "$LIKES_URL/unlike" $unlike_data
 }
 
+# Hashtag-related functions
+function test_get_all_hashtags {
+    print_header "Testing GET all hashtags"
+    make_request "GET" $HASHTAGS_URL
+}
+
+function test_get_hashtag {
+    print_header "Testing GET hashtag by ID"
+    $hashtag_id = Read-Host "Enter hashtag ID"
+    make_request "GET" "$HASHTAGS_URL/$hashtag_id"
+}
+
+function test_create_hashtag {
+    print_header "Testing POST create hashtag"
+    $name = Read-Host "Enter hashtag name (without #)"
+    
+    $hashtag_data = @{
+        name = $name
+    } | ConvertTo-Json
+    
+    make_request "POST" $HASHTAGS_URL $hashtag_data
+}
+
+function test_update_hashtag {
+    print_header "Testing PUT update hashtag"
+    $hashtag_id = Read-Host "Enter hashtag ID to update"
+    $name = Read-Host "Enter new hashtag name (without #)"
+    
+    $update_data = @{
+        name = $name
+    } | ConvertTo-Json
+    
+    make_request "PUT" "$HASHTAGS_URL/$hashtag_id" $update_data
+}
+
+function test_delete_hashtag {
+    print_header "Testing DELETE hashtag"
+    $hashtag_id = Read-Host "Enter hashtag ID to delete"
+    make_request "DELETE" "$HASHTAGS_URL/$hashtag_id"
+}
+
+# Post Hashtag-related functions
+function test_get_all_post_hashtags {
+    print_header "Testing GET all post hashtags"
+    make_request "GET" $POST_HASHTAGS_URL
+}
+
+function test_get_post_hashtag {
+    print_header "Testing GET post hashtag by ID"
+    $post_hashtag_id = Read-Host "Enter post hashtag ID"
+    make_request "GET" "$POST_HASHTAGS_URL/$post_hashtag_id"
+}
+
+function test_create_post_hashtag {
+    print_header "Testing POST create post hashtag"
+    $postId = Read-Host "Enter post ID"
+    $hashtagId = Read-Host "Enter hashtag ID"
+    
+    $post_hashtag_data = @{
+        postId = [int]$postId
+        hashtagId = [int]$hashtagId
+    } | ConvertTo-Json
+    
+    make_request "POST" $POST_HASHTAGS_URL $post_hashtag_data
+}
+
+function test_delete_post_hashtag {
+    print_header "Testing DELETE post hashtag"
+    $post_hashtag_id = Read-Host "Enter post hashtag ID to delete"
+    make_request "DELETE" "$POST_HASHTAGS_URL/$post_hashtag_id"
+}
+
+function test_remove_hashtag_from_post {
+    print_header "Testing remove hashtag from post"
+    $postId = Read-Host "Enter post ID"
+    $hashtagId = Read-Host "Enter hashtag ID"
+    
+    $remove_data = @{
+        postId = [int]$postId
+        hashtagId = [int]$hashtagId
+    } | ConvertTo-Json
+    
+    make_request "DELETE" "$POST_HASHTAGS_URL/remove" $remove_data
+}
+
 # Main program structure
 function main {
     while ($true) {
@@ -242,15 +329,19 @@ function main {
         Write-Host "2. Posts"
         Write-Host "3. Follows"
         Write-Host "4. Likes"
-        Write-Host "5. Exit"
-        $main_choice = Read-Host "Enter your choice (1-5)"
+        Write-Host "5. Hashtags"
+        Write-Host "6. Post Hashtags"
+        Write-Host "7. Exit"
+        $main_choice = Read-Host "Enter your choice (1-7)"
         
         switch ($main_choice) {
             "1" { show_users_menu }
             "2" { show_posts_menu }
             "3" { show_follows_menu }
             "4" { show_likes_menu }
-            "5" { 
+            "5" { show_hashtags_menu }
+            "6" { show_post_hashtags_menu }
+            "7" { 
                 Write-Host "Exiting..."
                 exit 
             }
@@ -353,6 +444,56 @@ function show_likes_menu {
             "3" { test_create_like }
             "4" { test_delete_like }
             "5" { test_unlike_post }
+            "6" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
+}
+
+function show_hashtags_menu {
+    $exit_submenu = $false
+    
+    while (-not $exit_submenu) {
+        Write-Host "`nHashtags Menu" -ForegroundColor $GREEN
+        Write-Host "1. Get all hashtags"
+        Write-Host "2. Get hashtag by ID"
+        Write-Host "3. Create new hashtag"
+        Write-Host "4. Update hashtag"
+        Write-Host "5. Delete hashtag"
+        Write-Host "6. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-6)"
+        
+        switch ($choice) {
+            "1" { test_get_all_hashtags }
+            "2" { test_get_hashtag }
+            "3" { test_create_hashtag }
+            "4" { test_update_hashtag }
+            "5" { test_delete_hashtag }
+            "6" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
+}
+
+function show_post_hashtags_menu {
+    $exit_submenu = $false
+    
+    while (-not $exit_submenu) {
+        Write-Host "`nPost Hashtags Menu" -ForegroundColor $GREEN
+        Write-Host "1. Get all post hashtags"
+        Write-Host "2. Get post hashtag by ID"
+        Write-Host "3. Add hashtag to post"
+        Write-Host "4. Remove hashtag from post"
+        Write-Host "5. Delete post hashtag by ID"
+        Write-Host "6. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-6)"
+        
+        switch ($choice) {
+            "1" { test_get_all_post_hashtags }
+            "2" { test_get_post_hashtag }
+            "3" { test_create_post_hashtag }
+            "4" { test_remove_hashtag_from_post }
+            "5" { test_delete_post_hashtag }
             "6" { $exit_submenu = $true }
             default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }

@@ -4,6 +4,8 @@ import { userRouter } from './routes/user.routes';
 import { postRouter } from './routes/post.routes';
 import { followRouter } from './routes/follow.routes';
 import { likeRouter } from './routes/like.routes';
+import { hashtagRouter } from './routes/hashtag.routes';
+import { postHashtagRouter } from './routes/postHashtag.routes';
 import { AppDataSource } from './data-source';
 
 dotenv.config();
@@ -30,6 +32,8 @@ apiRouter.use('/users', userRouter);
 apiRouter.use('/posts', postRouter);
 apiRouter.use('/follows', followRouter);
 apiRouter.use('/likes', likeRouter);
+apiRouter.use('/hashtags', hashtagRouter);
+apiRouter.use('/post-hashtags', postHashtagRouter);
 
 const PORT = process.env.PORT || 3000;
 
