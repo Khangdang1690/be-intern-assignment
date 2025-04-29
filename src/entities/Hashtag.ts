@@ -5,31 +5,24 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 
-@Entity('users')
-export class User {
+@Entity('hashtags')
+export class Hashtag {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column({ type: 'varchar', length: 255 })
-  firstName: string;
-
-  @Column({ type: 'varchar', length: 255 })
-  lastName: string;
-
   @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  @Index()
+  name: string;
 
-  @OneToMany('Post', 'author')
-  posts: any[];
-
-  @OneToMany('Like', 'user')
-  postsLiked: any[];
+  @OneToMany('PostHashtag', 'hashtag')
+  postHashtags: any[];
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-}
+} 
