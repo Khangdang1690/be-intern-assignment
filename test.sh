@@ -3,6 +3,7 @@
 # Base URLs
 USERS_URL="http://localhost:3000/api/users"
 POSTS_URL="http://localhost:3000/api/posts"
+FOLLOWS_URL="http://localhost:3000/api/follows"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -25,10 +26,23 @@ make_request() {
         echo "Data: $data"
     fi
     
+    # Add error handling by checking the response status code
     if [ "$method" = "GET" ]; then
-        curl -s -X $method "$endpoint" | jq .
+        response=$(curl -s -w "\n%{http_code}" -X $method "$endpoint")
     else
-        curl -s -X $method "$endpoint" -H "Content-Type: application/json" -d "$data" | jq .
+        response=$(curl -s -w "\n%{http_code}" -X $method "$endpoint" -H "Content-Type: application/json" -d "$data")
+    fi
+    
+    # Extract status code and response body
+    status_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | sed '$d')
+    
+    # Handle response based on status code
+    if [[ $status_code -ge 200 ]] && [[ $status_code -lt 300 ]]; then
+        echo "$body" | jq . 2>/dev/null || echo "$body"
+    else
+        echo -e "${RED}Error: HTTP Status $status_code${NC}"
+        echo "$body" | jq . 2>/dev/null || echo "$body"
     fi
     echo ""
 }
@@ -153,74 +167,153 @@ test_delete_post() {
     make_request "DELETE" "$POSTS_URL/$post_id"
 }
 
-# Submenu functions
+# Follow-related functions
+test_get_all_follows() {
+    print_header "Testing GET all follows"
+    make_request "GET" "$FOLLOWS_URL"
+}
+
+test_get_follow() {
+    print_header "Testing GET follow by ID"
+    read -p "Enter follow ID: " follow_id
+    make_request "GET" "$FOLLOWS_URL/$follow_id"
+}
+
+test_create_follow() {
+    print_header "Testing POST create follow"
+    read -p "Enter follower ID: " followerId
+    read -p "Enter following ID: " followingId
+    
+    local follow_data=$(cat <<EOF
+{
+    "followerId": $followerId,
+    "followingId": $followingId
+}
+EOF
+)
+    make_request "POST" "$FOLLOWS_URL" "$follow_data"
+}
+
+test_delete_follow() {
+    print_header "Testing DELETE follow"
+    read -p "Enter follow ID to delete: " follow_id
+    make_request "DELETE" "$FOLLOWS_URL/$follow_id"
+}
+
+test_unfollow_user() {
+    print_header "Testing unfollow user"
+    read -p "Enter follower ID: " followerId
+    read -p "Enter following ID: " followingId
+    
+    local unfollow_data=$(cat <<EOF
+{
+    "followerId": $followerId,
+    "followingId": $followingId
+}
+EOF
+)
+    make_request "DELETE" "$FOLLOWS_URL/unfollow" "$unfollow_data"
+}
+
+# Menu functions
 show_users_menu() {
-    echo -e "\n${GREEN}Users Menu${NC}"
-    echo "1. Get all users"
-    echo "2. Get user by ID"
-    echo "3. Create new user"
-    echo "4. Update user"
-    echo "5. Delete user"
-    echo "6. Back to main menu"
-    echo -n "Enter your choice (1-6): "
+    local exit_submenu=false
+    
+    while [ "$exit_submenu" = false ]; do
+        echo -e "\n${GREEN}Users Menu${NC}"
+        echo "1. Get all users"
+        echo "2. Get user by ID"
+        echo "3. Create new user"
+        echo "4. Update user"
+        echo "5. Delete user"
+        echo "6. Back to main menu"
+        echo -n "Enter your choice (1-6): "
+        read user_choice
+        
+        case $user_choice in
+            1) test_get_all_users ;;
+            2) test_get_user ;;
+            3) test_create_user ;;
+            4) test_update_user ;;
+            5) test_delete_user ;;
+            6) exit_submenu=true ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
 }
 
 show_posts_menu() {
-    echo -e "\n${GREEN}Posts Menu${NC}"
-    echo "1. Get all posts"
-    echo "2. Get post by ID"
-    echo "3. Create new post"
-    echo "4. Update post"
-    echo "5. Delete post"
-    echo "6. Back to main menu"
-    echo -n "Enter your choice (1-6): "
+    local exit_submenu=false
+    
+    while [ "$exit_submenu" = false ]; do
+        echo -e "\n${GREEN}Posts Menu${NC}"
+        echo "1. Get all posts"
+        echo "2. Get post by ID"
+        echo "3. Create new post"
+        echo "4. Update post"
+        echo "5. Delete post"
+        echo "6. Back to main menu"
+        echo -n "Enter your choice (1-6): "
+        read post_choice
+        
+        case $post_choice in
+            1) test_get_all_posts ;;
+            2) test_get_post ;;
+            3) test_create_post ;;
+            4) test_update_post ;;
+            5) test_delete_post ;;
+            6) exit_submenu=true ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
 }
 
-# Main menu
-show_main_menu() {
-    echo -e "\n${GREEN}API Testing Menu${NC}"
-    echo "1. Users"
-    echo "2. Posts"
-    echo "3. Exit"
-    echo -n "Enter your choice (1-3): "
+show_follows_menu() {
+    local exit_submenu=false
+    
+    while [ "$exit_submenu" = false ]; do
+        echo -e "\n${GREEN}Follows Menu${NC}"
+        echo "1. Get all follows"
+        echo "2. Get follow by ID"
+        echo "3. Follow a user"
+        echo "4. Unfollow a user directly"
+        echo "5. Delete follow by ID"
+        echo "6. Back to main menu"
+        echo -n "Enter your choice (1-6): "
+        read follow_choice
+        
+        case $follow_choice in
+            1) test_get_all_follows ;;
+            2) test_get_follow ;;
+            3) test_create_follow ;;
+            4) test_unfollow_user ;;
+            5) test_delete_follow ;;
+            6) exit_submenu=true ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
 }
 
-# Main loop
-while true; do
-    show_main_menu
-    read choice
-    case $choice in
-        1)
-            while true; do
-                show_users_menu
-                read user_choice
-                case $user_choice in
-                    1) test_get_all_users ;;
-                    2) test_get_user ;;
-                    3) test_create_user ;;
-                    4) test_update_user ;;
-                    5) test_delete_user ;;
-                    6) break ;;
-                    *) echo "Invalid choice. Please try again." ;;
-                esac
-            done
-            ;;
-        2)
-            while true; do
-                show_posts_menu
-                read post_choice
-                case $post_choice in
-                    1) test_get_all_posts ;;
-                    2) test_get_post ;;
-                    3) test_create_post ;;
-                    4) test_update_post ;;
-                    5) test_delete_post ;;
-                    6) break ;;
-                    *) echo "Invalid choice. Please try again." ;;
-                esac
-            done
-            ;;
-        3) echo "Exiting..."; exit 0 ;;
-        *) echo "Invalid choice. Please try again." ;;
-    esac
-done 
+# Main function
+main() {
+    while true; do
+        echo -e "\n${GREEN}API Testing Menu${NC}"
+        echo "1. Users"
+        echo "2. Posts"
+        echo "3. Follows"
+        echo "4. Exit"
+        echo -n "Enter your choice (1-4): "
+        read choice
+        
+        case $choice in
+            1) show_users_menu ;;
+            2) show_posts_menu ;;
+            3) show_follows_menu ;;
+            4) echo "Exiting..."; exit 0 ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
+}
+
+# Run the main function
+main 

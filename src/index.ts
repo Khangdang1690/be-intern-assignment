@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { userRouter } from './routes/user.routes';
 import { postRouter } from './routes/post.routes';
+import { followRouter } from './routes/follow.routes';
 import { AppDataSource } from './data-source';
 
 dotenv.config();
@@ -21,8 +22,12 @@ app.get('/', (req, res) => {
   res.send('Welcome to the Social Media Platform API! Server is running successfully.');
 });
 
-app.use('/api/users', userRouter);
-app.use('/api/posts', postRouter);
+const apiRouter = express.Router();
+app.use('/api', apiRouter);
+
+apiRouter.use('/users', userRouter);
+apiRouter.use('/posts', postRouter);
+apiRouter.use('/follows', followRouter);
 
 const PORT = process.env.PORT || 3000;
 

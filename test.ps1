@@ -1,6 +1,7 @@
 # Base URLs
 $USERS_URL = "http://localhost:3000/api/users"
 $POSTS_URL = "http://localhost:3000/api/posts"
+$FOLLOWS_URL = "http://localhost:3000/api/follows"
 
 # Colors for output
 $GREEN = "Green"
@@ -20,13 +21,19 @@ function make_request($method, $endpoint, $data) {
         Write-Host "Data: $data"
     }
     
-    if ($method -eq "GET") {
-        $result = Invoke-RestMethod -Method $method -Uri $endpoint -ContentType "application/json"
-        $result | ConvertTo-Json -Depth 10
+    try {
+        if ($method -eq "GET") {
+            $result = Invoke-RestMethod -Method $method -Uri $endpoint -ContentType "application/json"
+            $result | ConvertTo-Json -Depth 10
+        }
+        else {
+            $result = Invoke-RestMethod -Method $method -Uri $endpoint -Body $data -ContentType "application/json"
+            $result | ConvertTo-Json -Depth 10
+        }
     }
-    else {
-        $result = Invoke-RestMethod -Method $method -Uri $endpoint -Body $data -ContentType "application/json"
-        $result | ConvertTo-Json -Depth 10
+    catch {
+        Write-Host "Error: $_" -ForegroundColor $RED
+        Write-Host $_.Exception.Response.StatusCode -ForegroundColor $RED
     }
     Write-Host ""
 }
@@ -137,82 +144,148 @@ function test_delete_post {
     make_request "DELETE" "$POSTS_URL/$post_id"
 }
 
-# Submenu functions
+# Follow-related functions
+function test_get_all_follows {
+    print_header "Testing GET all follows"
+    make_request "GET" $FOLLOWS_URL
+}
+
+function test_get_follow {
+    print_header "Testing GET follow by ID"
+    $follow_id = Read-Host "Enter follow ID"
+    make_request "GET" "$FOLLOWS_URL/$follow_id"
+}
+
+function test_create_follow {
+    print_header "Testing POST create follow"
+    $followerId = Read-Host "Enter follower ID"
+    $followingId = Read-Host "Enter following ID"
+    
+    $follow_data = @{
+        followerId = [int]$followerId
+        followingId = [int]$followingId
+    } | ConvertTo-Json
+    
+    make_request "POST" $FOLLOWS_URL $follow_data
+}
+
+function test_delete_follow {
+    print_header "Testing DELETE follow"
+    $follow_id = Read-Host "Enter follow ID to delete"
+    make_request "DELETE" "$FOLLOWS_URL/$follow_id"
+}
+
+function test_unfollow_user {
+    print_header "Testing unfollow user"
+    $followerId = Read-Host "Enter follower ID"
+    $followingId = Read-Host "Enter following ID"
+    
+    $unfollow_data = @{
+        followerId = [int]$followerId
+        followingId = [int]$followingId
+    } | ConvertTo-Json
+    
+    make_request "DELETE" "$FOLLOWS_URL/unfollow" $unfollow_data
+}
+
+# Main program structure
+function main {
+    while ($true) {
+        # Show main menu
+        Write-Host "`nAPI Testing Menu" -ForegroundColor $GREEN
+        Write-Host "1. Users"
+        Write-Host "2. Posts"
+        Write-Host "3. Follows"
+        Write-Host "4. Exit"
+        $main_choice = Read-Host "Enter your choice (1-4)"
+        
+        switch ($main_choice) {
+            "1" { show_users_menu }
+            "2" { show_posts_menu }
+            "3" { show_follows_menu }
+            "4" { 
+                Write-Host "Exiting..."
+                exit 
+            }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
+}
+
 function show_users_menu {
-    Write-Host "`nUsers Menu" -ForegroundColor $GREEN
-    Write-Host "1. Get all users"
-    Write-Host "2. Get user by ID"
-    Write-Host "3. Create new user"
-    Write-Host "4. Update user"
-    Write-Host "5. Delete user"
-    Write-Host "6. Back to main menu"
-    $choice = Read-Host "Enter your choice (1-6)"
-    return $choice
+    $exit_submenu = $false
+    
+    while (-not $exit_submenu) {
+        Write-Host "`nUsers Menu" -ForegroundColor $GREEN
+        Write-Host "1. Get all users"
+        Write-Host "2. Get user by ID"
+        Write-Host "3. Create new user"
+        Write-Host "4. Update user"
+        Write-Host "5. Delete user"
+        Write-Host "6. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-6)"
+        
+        switch ($choice) {
+            "1" { test_get_all_users }
+            "2" { test_get_user }
+            "3" { test_create_user }
+            "4" { test_update_user }
+            "5" { test_delete_user }
+            "6" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
 }
 
 function show_posts_menu {
-    Write-Host "`nPosts Menu" -ForegroundColor $GREEN
-    Write-Host "1. Get all posts"
-    Write-Host "2. Get post by ID"
-    Write-Host "3. Create new post"
-    Write-Host "4. Update post"
-    Write-Host "5. Delete post"
-    Write-Host "6. Back to main menu"
-    $choice = Read-Host "Enter your choice (1-6)"
-    return $choice
-}
-
-# Main menu
-function show_main_menu {
-    Write-Host "`nAPI Testing Menu" -ForegroundColor $GREEN
-    Write-Host "1. Users"
-    Write-Host "2. Posts"
-    Write-Host "3. Exit"
-    $choice = Read-Host "Enter your choice (1-3)"
-    return $choice
-}
-
-# Main loop
-while ($true) {
-    $main_choice = show_main_menu
+    $exit_submenu = $false
     
-    switch ($main_choice) {
-        "1" {
-            while ($true) {
-                $user_choice = show_users_menu
-                
-                switch ($user_choice) {
-                    "1" { test_get_all_users }
-                    "2" { test_get_user }
-                    "3" { test_create_user }
-                    "4" { test_update_user }
-                    "5" { test_delete_user }
-                    "6" { break }
-                    default { Write-Host "Invalid choice. Please try again." }
-                }
-            }
-        }
-        "2" {
-            while ($true) {
-                $post_choice = show_posts_menu
-                
-                switch ($post_choice) {
-                    "1" { test_get_all_posts }
-                    "2" { test_get_post }
-                    "3" { test_create_post }
-                    "4" { test_update_post }
-                    "5" { test_delete_post }
-                    "6" { break }
-                    default { Write-Host "Invalid choice. Please try again." }
-                }
-            }
-        }
-        "3" {
-            Write-Host "Exiting..."
-            exit
-        }
-        default {
-            Write-Host "Invalid choice. Please try again."
+    while (-not $exit_submenu) {
+        Write-Host "`nPosts Menu" -ForegroundColor $GREEN
+        Write-Host "1. Get all posts"
+        Write-Host "2. Get post by ID"
+        Write-Host "3. Create new post"
+        Write-Host "4. Update post"
+        Write-Host "5. Delete post"
+        Write-Host "6. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-6)"
+        
+        switch ($choice) {
+            "1" { test_get_all_posts }
+            "2" { test_get_post }
+            "3" { test_create_post }
+            "4" { test_update_post }
+            "5" { test_delete_post }
+            "6" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }
     }
-} 
+}
+
+function show_follows_menu {
+    $exit_submenu = $false
+    
+    while (-not $exit_submenu) {
+        Write-Host "`nFollows Menu" -ForegroundColor $GREEN
+        Write-Host "1. Get all follows"
+        Write-Host "2. Get follow by ID"
+        Write-Host "3. Follow a user"
+        Write-Host "4. Unfollow a user directly"
+        Write-Host "5. Delete follow by ID"
+        Write-Host "6. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-6)"
+        
+        switch ($choice) {
+            "1" { test_get_all_follows }
+            "2" { test_get_follow }
+            "3" { test_create_follow }
+            "4" { test_unfollow_user }
+            "5" { test_delete_follow }
+            "6" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
+}
+
+# Start the program
+main 

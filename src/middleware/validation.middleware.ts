@@ -9,8 +9,15 @@ export const validate = (schema: Joi.ObjectSchema) => {
     });
 
     if (error) {
-      const errorMessage = error.details.map((detail) => detail.message).join(', ');
-      return res.status(400).json({ message: errorMessage });
+      // Transform the error if it's a self-follow validation error
+      const errorMessages = error.details.map((detail) => {
+        if (detail.type === 'followerId.selfFollow') {
+          return 'Users cannot follow themselves';
+        }
+        return detail.message;
+      }).join(', ');
+      
+      return res.status(400).json({ message: errorMessages });
     }
 
     next();
