@@ -126,6 +126,45 @@ function test_get_user_followers {
     make_request "GET" $endpoint
 }
 
+function test_get_user_activity {
+    print_header "Testing GET user activity"
+    $user_id = Read-Host "Enter user ID"
+    $type = Read-Host "Enter activity type (post, like, follow, unfollow) or press Enter for all"
+    $limit = Read-Host "Enter limit (or press Enter for default)"
+    $offset = Read-Host "Enter offset (or press Enter for default)"
+    $startDate = Read-Host "Enter start date (YYYY-MM-DD) (or press Enter to skip)"
+    $endDate = Read-Host "Enter end date (YYYY-MM-DD) (or press Enter to skip)"
+    
+    $endpoint = "$USERS_URL/$user_id/activity"
+    $params = @()
+    
+    if ($type) {
+        $params += "type=$type"
+    }
+    
+    if ($limit) {
+        $params += "limit=$limit"
+    }
+    
+    if ($offset) {
+        $params += "offset=$offset"
+    }
+    
+    if ($startDate) {
+        $params += "startDate=$startDate"
+    }
+    
+    if ($endDate) {
+        $params += "endDate=$endDate"
+    }
+    
+    if ($params.Count -gt 0) {
+        $endpoint += "?" + [string]::Join("&", $params)
+    }
+    
+    make_request "GET" $endpoint
+}
+
 # Post-related functions
 function test_get_all_posts {
     print_header "Testing GET all posts"
@@ -405,22 +444,24 @@ function show_users_menu {
         Write-Host "`nUsers Menu" -ForegroundColor $GREEN
         Write-Host "1. Get all users"
         Write-Host "2. Get user by ID"
-        Write-Host "3. Create user"
-        Write-Host "4. Update user"
-        Write-Host "5. Delete user"
-        Write-Host "6. Get user followers"
-        Write-Host "7. Back to main menu"
+        Write-Host "3. Get user followers"
+        Write-Host "4. Get user activity"
+        Write-Host "5. Create user"
+        Write-Host "6. Update user"
+        Write-Host "7. Delete user"
+        Write-Host "8. Back to main menu"
         
         $choice = Read-Host "Enter your choice"
         
         switch ($choice) {
             "1" { test_get_all_users }
             "2" { test_get_user }
-            "3" { test_create_user }
-            "4" { test_update_user }
-            "5" { test_delete_user }
-            "6" { test_get_user_followers }
-            "7" { $exit_submenu = $true }
+            "3" { test_get_user_followers }
+            "4" { test_get_user_activity }
+            "5" { test_create_user }
+            "6" { test_update_user }
+            "7" { test_delete_user }
+            "8" { $exit_submenu = $true }
             default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }
     }
@@ -573,26 +614,51 @@ function show_feed_menu {
 # Main function
 function main {
     while ($true) {
-        Write-Host "`nAPI Testing Menu" -ForegroundColor $GREEN
-        Write-Host "1. Users"
-        Write-Host "2. Posts"
-        Write-Host "3. Follows"
-        Write-Host "4. Likes"
-        Write-Host "5. Hashtags"
-        Write-Host "6. Post Hashtags"
-        Write-Host "7. Feed"
-        Write-Host "8. Exit"
-        $main_choice = Read-Host "Enter your choice (1-8)"
+        Write-Host "`n=== Social Media API Test Menu ===" -ForegroundColor $GREEN
+        Write-Host "1. User Operations" -ForegroundColor $DEFAULT
+        Write-Host "2. Post Operations" -ForegroundColor $DEFAULT
+        Write-Host "3. Follow Operations" -ForegroundColor $DEFAULT
+        Write-Host "4. Like Operations" -ForegroundColor $DEFAULT
+        Write-Host "5. Hashtag Operations" -ForegroundColor $DEFAULT
+        Write-Host "6. Post-Hashtag Operations" -ForegroundColor $DEFAULT
+        Write-Host "7. Feed Operations" -ForegroundColor $DEFAULT
+        Write-Host "0. Exit" -ForegroundColor $DEFAULT
         
-        switch ($main_choice) {
-            "1" { show_users_menu }
+        $choice = Read-Host "Enter your choice"
+        
+        switch ($choice) {
+            "1" {
+                Write-Host "`n=== User Operations ===" -ForegroundColor $GREEN
+                Write-Host "1. Get all users" -ForegroundColor $DEFAULT
+                Write-Host "2. Get user by ID" -ForegroundColor $DEFAULT
+                Write-Host "3. Get user followers" -ForegroundColor $DEFAULT
+                Write-Host "4. Get user activity" -ForegroundColor $DEFAULT
+                Write-Host "5. Create user" -ForegroundColor $DEFAULT
+                Write-Host "6. Update user" -ForegroundColor $DEFAULT
+                Write-Host "7. Delete user" -ForegroundColor $DEFAULT
+                Write-Host "0. Back to main menu" -ForegroundColor $DEFAULT
+                
+                $user_choice = Read-Host "Enter your choice"
+                
+                switch ($user_choice) {
+                    "1" { test_get_all_users }
+                    "2" { test_get_user }
+                    "3" { test_get_user_followers }
+                    "4" { test_get_user_activity }
+                    "5" { test_create_user }
+                    "6" { test_update_user }
+                    "7" { test_delete_user }
+                    "0" { continue }
+                    default { Write-Host "Invalid choice" -ForegroundColor $RED }
+                }
+            }
             "2" { show_posts_menu }
             "3" { show_follows_menu }
             "4" { show_likes_menu }
             "5" { show_hashtags_menu }
             "6" { show_post_hashtags_menu }
             "7" { show_feed_menu }
-            "8" { 
+            "0" { 
                 Write-Host "Exiting..."
                 exit 
             }

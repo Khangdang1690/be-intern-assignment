@@ -4,7 +4,9 @@ import {
   createUserSchema, 
   updateUserSchema, 
   getUserFollowersParamsSchema,
-  getUserFollowersQuerySchema
+  getUserFollowersQuerySchema,
+  getUserActivityParamsSchema,
+  getUserActivityQuerySchema
 } from '../validations/user.validation';
 import { UserController } from '../controllers/user.controller';
 
@@ -23,6 +25,14 @@ userRouter.get(
   validate(getUserFollowersParamsSchema, 'params'),
   validate(getUserFollowersQuerySchema, 'query'),
   userController.getUserFollowers.bind(userController)
+);
+
+// Get user's activity
+userRouter.get(
+  '/:id/activity',
+  validate(getUserActivityParamsSchema, 'params'),
+  validate(getUserActivityQuerySchema, 'query'),
+  userController.getUserActivity.bind(userController)
 );
 
 // Create new user

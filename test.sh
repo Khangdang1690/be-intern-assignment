@@ -63,6 +63,69 @@ test_get_user() {
     make_request "GET" "$USERS_URL/$user_id"
 }
 
+test_get_user_followers() {
+    print_header "Testing GET user followers"
+    read -p "Enter user ID: " user_id
+    read -p "Enter limit (or press Enter for default): " limit
+    read -p "Enter offset (or press Enter for default): " offset
+    
+    endpoint="$USERS_URL/$user_id/followers"
+    params=()
+    
+    if [ -n "$limit" ]; then
+        params+=("limit=$limit")
+    fi
+    
+    if [ -n "$offset" ]; then
+        params+=("offset=$offset")
+    fi
+    
+    if [ ${#params[@]} -gt 0 ]; then
+        endpoint="$endpoint?$(IFS='&'; echo "${params[*]}")"
+    fi
+    
+    make_request "GET" "$endpoint"
+}
+
+test_get_user_activity() {
+    print_header "Testing GET user activity"
+    read -p "Enter user ID: " user_id
+    read -p "Enter activity type (post, like, follow, unfollow) or press Enter for all: " type
+    read -p "Enter limit (or press Enter for default): " limit
+    read -p "Enter offset (or press Enter for default): " offset
+    read -p "Enter start date (YYYY-MM-DD) (or press Enter to skip): " startDate
+    read -p "Enter end date (YYYY-MM-DD) (or press Enter to skip): " endDate
+    
+    endpoint="$USERS_URL/$user_id/activity"
+    params=()
+    
+    if [ -n "$type" ]; then
+        params+=("type=$type")
+    fi
+    
+    if [ -n "$limit" ]; then
+        params+=("limit=$limit")
+    fi
+    
+    if [ -n "$offset" ]; then
+        params+=("offset=$offset")
+    fi
+    
+    if [ -n "$startDate" ]; then
+        params+=("startDate=$startDate")
+    fi
+    
+    if [ -n "$endDate" ]; then
+        params+=("endDate=$endDate")
+    fi
+    
+    if [ ${#params[@]} -gt 0 ]; then
+        endpoint="$endpoint?$(IFS='&'; echo "${params[*]}")"
+    fi
+    
+    make_request "GET" "$endpoint"
+}
+
 test_create_user() {
     print_header "Testing POST create user"
     read -p "Enter first name: " firstName
@@ -120,31 +183,6 @@ test_delete_user() {
     print_header "Testing DELETE user"
     read -p "Enter user ID to delete: " user_id
     make_request "DELETE" "$USERS_URL/$user_id"
-}
-
-test_get_user_followers() {
-    print_header "Testing GET user followers"
-    read -p "Enter user ID: " user_id
-    read -p "Enter limit (or press Enter for default): " limit
-    read -p "Enter offset (or press Enter for default): " offset
-    
-    local endpoint="$USERS_URL/$user_id/followers"
-    
-    if [ -n "$limit" ] || [ -n "$offset" ]; then
-        endpoint+="?"
-        if [ -n "$limit" ]; then
-            endpoint+="limit=$limit"
-        fi
-        
-        if [ -n "$offset" ]; then
-            if [ -n "$limit" ]; then
-                endpoint+="&"
-            fi
-            endpoint+="offset=$offset"
-        fi
-    fi
-    
-    make_request "GET" "$endpoint"
 }
 
 # Post-related functions
@@ -446,22 +484,24 @@ show_users_menu() {
         echo -e "\n${GREEN}Users Menu${NC}"
         echo "1. Get all users"
         echo "2. Get user by ID"
-        echo "3. Create user"
-        echo "4. Update user"
-        echo "5. Delete user"
-        echo "6. Get user followers"
-        echo "7. Back to main menu"
+        echo "3. Get user followers"
+        echo "4. Get user activity"
+        echo "5. Create user"
+        echo "6. Update user"
+        echo "7. Delete user"
+        echo "8. Back to main menu"
         
         read -p "Enter your choice: " choice
         
         case $choice in
             1) test_get_all_users ;;
             2) test_get_user ;;
-            3) test_create_user ;;
-            4) test_update_user ;;
-            5) test_delete_user ;;
-            6) test_get_user_followers ;;
-            7) exit_submenu=true ;;
+            3) test_get_user_followers ;;
+            4) test_get_user_activity ;;
+            5) test_create_user ;;
+            6) test_update_user ;;
+            7) test_delete_user ;;
+            8) exit_submenu=true ;;
             *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
         esac
     done
