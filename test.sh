@@ -7,6 +7,7 @@ FOLLOWS_URL="http://localhost:3000/api/follows"
 LIKES_URL="http://localhost:3000/api/likes"
 HASHTAGS_URL="http://localhost:3000/api/hashtags"
 POST_HASHTAGS_URL="http://localhost:3000/api/post-hashtags"
+FEED_URL="http://localhost:3000/api/feed"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -359,6 +360,33 @@ EOF
     make_request "DELETE" "$POST_HASHTAGS_URL/remove" "$remove_data"
 }
 
+# Feed-related functions
+test_get_feed() {
+    print_header "Testing POST user feed"
+    read -p "Enter user ID: " userId
+    read -p "Enter limit (optional, press Enter for default 10): " limit
+    read -p "Enter offset (optional, press Enter for default 0): " offset
+    
+    query_params=""
+    if [ -n "$limit" ]; then
+        query_params="?limit=$limit"
+        if [ -n "$offset" ]; then
+            query_params+="&offset=$offset"
+        fi
+    elif [ -n "$offset" ]; then
+        query_params="?offset=$offset"
+    fi
+    
+    local feed_data=$(cat <<EOF
+{
+    "userId": $userId
+}
+EOF
+)
+    
+    make_request "POST" "$FEED_URL$query_params" "$feed_data"
+}
+
 # Menu functions
 show_users_menu() {
     local exit_submenu=false
@@ -516,6 +544,24 @@ show_post_hashtags_menu() {
     done
 }
 
+show_feed_menu() {
+    local exit_submenu=false
+    
+    while [ "$exit_submenu" = false ]; do
+        echo -e "\n${GREEN}Feed Menu${NC}"
+        echo "1. Get user feed"
+        echo "2. Back to main menu"
+        echo -n "Enter your choice (1-2): "
+        read feed_choice
+        
+        case $feed_choice in
+            1) test_get_feed ;;
+            2) exit_submenu=true ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
+}
+
 # Main function
 main() {
     while true; do
@@ -526,8 +572,9 @@ main() {
         echo "4. Likes"
         echo "5. Hashtags"
         echo "6. Post Hashtags"
-        echo "7. Exit"
-        echo -n "Enter your choice (1-7): "
+        echo "7. Feed"
+        echo "8. Exit"
+        echo -n "Enter your choice (1-8): "
         read main_choice
         
         case $main_choice in
@@ -537,7 +584,8 @@ main() {
             4) show_likes_menu ;;
             5) show_hashtags_menu ;;
             6) show_post_hashtags_menu ;;
-            7) echo "Exiting..."; exit 0 ;;
+            7) show_feed_menu ;;
+            8) echo "Exiting..."; exit 0 ;;
             *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
         esac
     done

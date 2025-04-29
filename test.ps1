@@ -5,6 +5,7 @@ $FOLLOWS_URL = "http://localhost:3000/api/follows"
 $LIKES_URL = "http://localhost:3000/api/likes"
 $HASHTAGS_URL = "http://localhost:3000/api/hashtags"
 $POST_HASHTAGS_URL = "http://localhost:3000/api/post-hashtags"
+$FEED_URL = "http://localhost:3000/api/feed"
 
 # Colors for output
 $GREEN = "Green"
@@ -320,6 +321,31 @@ function test_remove_hashtag_from_post {
     make_request "DELETE" "$POST_HASHTAGS_URL/remove" $remove_data
 }
 
+# Feed-related functions
+function test_get_feed {
+    print_header "Testing POST user feed"
+    $userId = Read-Host "Enter user ID"
+    $limit = Read-Host "Enter limit (optional, press Enter for default 10)"
+    $offset = Read-Host "Enter offset (optional, press Enter for default 0)"
+    
+    $query_params = ""
+    if ($limit) {
+        $query_params += "?limit=$limit"
+        if ($offset) {
+            $query_params += "&offset=$offset"
+        }
+    } 
+    elseif ($offset) {
+        $query_params += "?offset=$offset"
+    }
+    
+    $feed_data = @{
+        userId = [int]$userId
+    } | ConvertTo-Json
+    
+    make_request "POST" "$FEED_URL$query_params" $feed_data
+}
+
 # Main program structure
 function main {
     while ($true) {
@@ -331,8 +357,9 @@ function main {
         Write-Host "4. Likes"
         Write-Host "5. Hashtags"
         Write-Host "6. Post Hashtags"
-        Write-Host "7. Exit"
-        $main_choice = Read-Host "Enter your choice (1-7)"
+        Write-Host "7. Feed"
+        Write-Host "8. Exit"
+        $main_choice = Read-Host "Enter your choice (1-8)"
         
         switch ($main_choice) {
             "1" { show_users_menu }
@@ -341,7 +368,8 @@ function main {
             "4" { show_likes_menu }
             "5" { show_hashtags_menu }
             "6" { show_post_hashtags_menu }
-            "7" { 
+            "7" { show_feed_menu }
+            "8" { 
                 Write-Host "Exiting..."
                 exit 
             }
@@ -495,6 +523,23 @@ function show_post_hashtags_menu {
             "4" { test_remove_hashtag_from_post }
             "5" { test_delete_post_hashtag }
             "6" { $exit_submenu = $true }
+            default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
+        }
+    }
+}
+
+function show_feed_menu {
+    $exit_submenu = $false
+    
+    while (-not $exit_submenu) {
+        Write-Host "`nFeed Menu" -ForegroundColor $GREEN
+        Write-Host "1. Get user feed"
+        Write-Host "2. Back to main menu"
+        $choice = Read-Host "Enter your choice (1-2)"
+        
+        switch ($choice) {
+            "1" { test_get_feed }
+            "2" { $exit_submenu = $true }
             default { Write-Host "Invalid choice. Please try again." -ForegroundColor $RED }
         }
     }
