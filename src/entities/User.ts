@@ -24,9 +24,6 @@ export class User {
   @OneToMany('Post', 'author')
   posts: any[];
 
-  @OneToMany('Like', 'user')
-  postsLiked: any[];
-
   @CreateDateColumn()
   createdAt: Date;
 
