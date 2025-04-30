@@ -13,13 +13,13 @@ export class PostController {
       const posts = await this.postRepository.find({
         relations: ['author', 'likes'],
       });
-      
+
       // Format posts to include like count
       const formattedPosts = posts.map(post => ({
         ...post,
         likeCount: post.likes ? post.likes.length : 0,
       }));
-      
+
       res.json(formattedPosts);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching posts', error });
@@ -32,17 +32,17 @@ export class PostController {
         where: { id: parseInt(req.params.id) },
         relations: ['author', 'likes'],
       });
-      
+
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }
-      
+
       // Format post to include like count
       const formattedPost = {
         ...post,
         likeCount: post.likes ? post.likes.length : 0,
       };
-      
+
       res.json(formattedPost);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching post', error });
@@ -55,14 +55,14 @@ export class PostController {
       const authorExists = await this.userRepository.findOneBy({
         id: req.body.authorId,
       });
-      
+
       if (!authorExists) {
         return res.status(400).json({ message: 'Author does not exist' });
       }
-      
+
       const post = this.postRepository.create(req.body);
       const result = await this.postRepository.save(post);
-      
+
       res.status(201).json(result);
     } catch (error) {
       res.status(500).json({ message: 'Error creating post', error });
@@ -74,14 +74,14 @@ export class PostController {
       const post = await this.postRepository.findOneBy({
         id: parseInt(req.params.id),
       });
-      
+
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }
-      
+
       this.postRepository.merge(post, req.body);
       const result = await this.postRepository.save(post);
-      
+
       res.json(result);
     } catch (error) {
       res.status(500).json({ message: 'Error updating post', error });
@@ -91,11 +91,11 @@ export class PostController {
   async deletePost(req: Request, res: Response) {
     try {
       const result = await this.postRepository.delete(parseInt(req.params.id));
-      
+
       if (result.affected === 0) {
         return res.status(404).json({ message: 'Post not found' });
       }
-      
+
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: 'Error deleting post', error });
@@ -121,23 +121,33 @@ export class PostController {
       // Get posts with the hashtag
       const posts = await query.getMany();
 
-      // Get like counts for each post
-      const postsWithLikes = await Promise.all(
-        posts.map(async (post) => {
-          const likeCount = await AppDataSource.getRepository(Like).count({
-            where: { postId: post.id }
-          });
+      const postIds = posts.map(post => post.id);
 
-          return {
-            ...post,
-            likeCount
-          };
-        })
-      );
+      // Get like counts for all posts in one query
+      let likeCounts: Record<number, number> = {};
+      if (postIds.length > 0) {
+        const likeCountsRaw = await AppDataSource.getRepository(Like)
+          .createQueryBuilder('like')
+          .select('like.postId', 'postId')
+          .addSelect('COUNT(*)', 'likeCount')
+          .where('like.postId IN (:...postIds)', { postIds })
+          .groupBy('like.postId')
+          .getRawMany();
+
+        likeCounts = Object.fromEntries(
+          likeCountsRaw.map(row => [Number(row.postId), parseInt(row.likeCount, 10)])
+        );
+      }
+
+      // Attach likeCount to each post
+      const postsWithLikes = posts.map(post => ({
+        ...post,
+        likeCount: likeCounts[post.id] || 0,
+      }));
 
       res.json(postsWithLikes);
     } catch (error) {
       res.status(500).json({ message: 'Error fetching posts by hashtag', error });
     }
   }
-} 
+}

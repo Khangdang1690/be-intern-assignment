@@ -19,4 +19,4 @@ followRouter.get('/:id', followController.getFollowById.bind(followController));
 followRouter.post('/', validate(createFollowSchema), followController.createFollow.bind(followController));
 
 // Delete follow by id
-followRouter.delete('/:id', followController.deleteFollow.bind(followController)); 
+followRouter.delete('/:id', followController.deleteFollow.bind(followController));

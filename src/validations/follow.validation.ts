@@ -15,10 +15,9 @@ export const createFollowSchema = Joi.object({
   }),
 }).custom((value, helpers) => {
   if (value.followerId === value.followingId) {
-    // Creating custom error with specific type to identify this error
-    return helpers.error('any.invalid', { 
-      message: 'Users cannot follow themselves'
+    return helpers.error('any.invalid', {
+      message: 'Users cannot follow or unfollow themselves'
     });
   }
   return value;
-}); 
+});

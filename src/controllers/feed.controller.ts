@@ -16,25 +16,25 @@ export class FeedController {
       const { userId } = req.body;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
-      
+
       // Validate userId exists
       const userExists = await this.userRepository.findOneBy({
         id: userId,
       });
-      
+
       if (!userExists) {
         return res.status(400).json({ message: 'User does not exist' });
       }
-      
+
       // Find all users that the current user actively follows
       const follows = await this.followRepository.find({
         where: { followerId: userId, isActive: true },
         select: ['followingId'],
       });
-      
+
       // Extract the IDs of followed users
       const followingIds = follows.map(follow => follow.followingId);
-      
+
       // If user doesn't follow anyone, return empty feed
       if (followingIds.length === 0) {
         return res.json({
@@ -46,18 +46,17 @@ export class FeedController {
           },
         });
       }
-      
+
       // Query total count for pagination
       const total = await this.postRepository.count({
         where: { authorId: In(followingIds) },
       });
-      
+
       // Query posts from followed users with pagination
       const posts = await this.postRepository.find({
         where: { authorId: In(followingIds) },
         relations: [
           'author',
-          'likes',
           'postHashtags',
           'postHashtags.hashtag',
         ],
@@ -65,13 +64,31 @@ export class FeedController {
         skip: offset,
         take: limit,
       });
-      
+
+      // Get all post IDs
+      const postIds = posts.map(post => post.id);
+
+      // Get like counts for all posts in one query
+      let likeCounts: Record<number, number> = {};
+      if (postIds.length > 0) {
+        const likeCountsRaw = await AppDataSource.getRepository('Like')
+          .createQueryBuilder('like')
+          .select('like.postId', 'postId')
+          .addSelect('COUNT(*)', 'likeCount')
+          .where('like.postId IN (:...postIds)', { postIds })
+          .groupBy('like.postId')
+          .getRawMany();
+
+        likeCounts = Object.fromEntries(
+          likeCountsRaw.map(row => [Number(row.postId), parseInt(row.likeCount, 10)])
+        );
+      }
+
       // Format the posts for response
       const formattedPosts = posts.map(post => {
-        const hashtags = post.postHashtags ? 
-          post.postHashtags.map(ph => ph.hashtag).filter(Boolean) : 
+        const hashtags = post.postHashtags ?
+          post.postHashtags.map(ph => ph.hashtag).filter(Boolean) :
           [];
-          
         return {
           id: post.id,
           content: post.content,
@@ -82,11 +99,11 @@ export class FeedController {
             firstName: post.author.firstName,
             lastName: post.author.lastName,
           },
-          likeCount: post.likes ? post.likes.length : 0,
+          likeCount: likeCounts[post.id] || 0,
           hashtags: hashtags,
         };
       });
-      
+
       // Return feed with pagination info
       res.json({
         data: formattedPosts,
@@ -100,4 +117,4 @@ export class FeedController {
       res.status(500).json({ message: 'Error fetching feed', error });
     }
   }
-} 
+}

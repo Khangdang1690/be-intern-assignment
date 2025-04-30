@@ -9,6 +9,8 @@ import {
 } from 'typeorm';
 
 @Entity('post_hashtags')
+@Index(['postId'])
+@Index(['hashtagId'])
 @Index(['postId', 'hashtagId'], { unique: true })
 export class PostHashtag {
   @PrimaryGeneratedColumn('increment')
@@ -30,4 +32,4 @@ export class PostHashtag {
 
   @CreateDateColumn()
   createdAt: Date;
-} 
+}
